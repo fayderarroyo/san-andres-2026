@@ -489,15 +489,22 @@ document.getElementById('chat-form').addEventListener('submit', async (e) => {
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
+    // Primero pintar la UI
     renderProviders();
-    initChatUser();
-    if(isFirebaseActive) {
-        loadFirebaseData();
-    } else {
+    if(!isFirebaseActive) {
         renderItinerary();
         renderBudget();
-        let localMsgs = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
-        localMsgs.forEach(msg => renderSingleMessage(msg));
     }
-    if (Notification.permission === "granted") setAlertsActive();
+
+    // Retrasar el prompt medio segundo para evitar que Safari en móviles congele la pantalla blanca
+    setTimeout(() => {
+        initChatUser();
+        if(isFirebaseActive) {
+            loadFirebaseData();
+        } else {
+            let localMsgs = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
+            localMsgs.forEach(msg => renderSingleMessage(msg));
+        }
+        if (Notification.permission === "granted") setAlertsActive();
+    }, 500);
 });
