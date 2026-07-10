@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>San Andrés 2026</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        caribbean: {
+                            100: '#e0f2fe',
+                            300: '#7dd3fc',
+                            500: '#0ea5e9',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        sand: {
+                            100: '#fef3c7',
+                            400: '#fbbf24',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans min-h-screen pb-20 overflow-x-hidden">
+
+    <!-- FONDOS DINÁMICOS -->
+    <div id="bg-itinerary" class="fixed inset-0 z-[-1] bg-cover bg-center transition-opacity duration-700 opacity-100" style="background-image: url('img/corals.png');">
+        <div class="absolute inset-0 bg-slate-900/80 backdrop-blur-sm"></div>
+    </div>
+    <div id="bg-providers" class="fixed inset-0 z-[-1] bg-cover bg-center transition-opacity duration-700 opacity-0" style="background-image: url('img/people.png');">
+        <div class="absolute inset-0 bg-slate-900/85 backdrop-blur-md"></div>
+    </div>
+
+    <!-- HEADER FLOTANTE -->
+    <div class="glass-panel sticky top-0 z-40 px-4 pt-8 pb-4 text-center border-b border-white/10 shadow-xl">
+        <h1 class="text-3xl font-extrabold tracking-wide uppercase text-transparent bg-clip-text bg-gradient-to-r from-caribbean-300 to-emerald-300 drop-shadow-md">
+            San Andrés 2026
+        </h1>
+        <p class="text-sand-100/80 text-sm mt-1 font-medium tracking-wide">Portal de Planificación Grupal</p>
+    </div>
+
+    <main class="max-w-md mx-auto px-4 mt-6 space-y-6 relative">
+        
+        <!-- ==================== VISTA: ITINERARIO ==================== -->
+        <section id="view-itinerary" class="view-section active space-y-6">
+            
+            <!-- CONTADOR -->
+            <div class="glass-card rounded-2xl p-5 text-center flex flex-col items-center justify-center relative overflow-hidden">
+                <div class="absolute -right-10 -top-10 w-32 h-32 bg-caribbean-500/20 rounded-full blur-2xl"></div>
+                <div class="absolute -left-10 -bottom-10 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl"></div>
+                
+                <span class="animate-pulse flex h-3 w-3 rounded-full bg-emerald-400 mb-2 shadow-[0_0_10px_rgba(52,211,153,0.8)]"></span>
+                <p id="countdown-text" class="text-sm font-bold text-slate-100 tracking-wider">Calculando tiempo...</p>
+            </div>
+
+            <!-- ALERTAS -->
+            <div class="glass-card border border-caribbean-500/30 rounded-2xl p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-bold uppercase tracking-wider text-caribbean-300 flex items-center gap-2">
+                        ✈️ Vuelo Wingo
+                    </h3>
+                    <button onclick="requestNotificationPermission()" id="noti-btn" class="text-[10px] uppercase tracking-wider bg-caribbean-500/80 hover:bg-caribbean-400 text-white font-bold py-1.5 px-3 rounded-full transition-colors border border-caribbean-400/50">
+                        Activar Alertas
+                    </button>
+                </div>
+                <p class="text-xs text-slate-300/80 leading-relaxed">
+                    Reserva: <strong class="text-white bg-slate-800/50 px-1 rounded">8YPDYE</strong>. Check-in web habilitado 72h antes (7 Oct, 08:43 AM).
+                </p>
+            </div>
+
+            <!-- ITINERARIO -->
+            <div class="glass-card border border-white/10 rounded-2xl p-4">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-emerald-300 mb-4 flex items-center gap-2">
+                    🗺️ Itinerario Interactivo
+                </h3>
+                
+                <div class="space-y-3" id="itinerary-container">
+                    <!-- Dinámicamente inyectado por JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== VISTA: PROVEEDORES ==================== -->
+        <section id="view-providers" class="view-section hidden space-y-6">
+            
+            <div class="glass-card border border-white/10 rounded-2xl p-4">
+                <h3 class="text-sm font-bold uppercase tracking-wider text-sand-400 mb-4 flex items-center gap-2">
+                    📂 Directorio del Grupo
+                </h3>
+                
+                <form id="provider-form" class="space-y-3 mb-6">
+                    <input type="text" id="prov-name" placeholder="Nombre (Ej: Alquiler Mulas)" required class="input-glass w-full rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400/70 focus:outline-none focus:ring-2 focus:ring-sand-400/50">
+                    <div class="grid grid-cols-2 gap-3">
+                        <input type="tel" id="prov-phone" placeholder="WhatsApp" required class="input-glass rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400/70 focus:outline-none focus:ring-2 focus:ring-sand-400/50">
+                        <input type="url" id="prov-link" placeholder="Instagram/Web" class="input-glass rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-400/70 focus:outline-none focus:ring-2 focus:ring-sand-400/50">
+                    </div>
+                    <button type="submit" class="w-full bg-gradient-to-r from-emerald-500 to-caribbean-500 hover:from-emerald-400 hover:to-caribbean-400 text-white font-bold tracking-widest uppercase text-xs py-3 rounded-xl transition-all shadow-[0_0_15px_rgba(16,185,129,0.3)] border border-white/20">
+                        + Agregar Proveedor
+                    </button>
+                </form>
+
+                <div id="providers-list" class="space-y-3 max-h-[50vh] overflow-y-auto custom-scroll pr-2 pb-10">
+                    <!-- Inyectado por JS -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION (ESTILO APP NATIVA) -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-nav border-t border-white/10 px-6 py-3 pb-safe">
+        <div class="max-w-md mx-auto flex justify-around items-center">
+            <button onclick="switchView('itinerary')" id="nav-itinerary" class="nav-btn active flex flex-col items-center gap-1 transition-all">
+                <span class="text-xl filter drop-shadow-md">🗺️</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Itinerario</span>
+            </button>
+            <div class="w-px h-8 bg-white/10"></div>
+            <button onclick="switchView('providers')" id="nav-providers" class="nav-btn flex flex-col items-center gap-1 transition-all opacity-50 hover:opacity-100">
+                <span class="text-xl filter drop-shadow-md">📂</span>
+                <span class="text-[10px] font-bold uppercase tracking-wider">Proveedores</span>
+            </button>
+        </div>
+    </nav>
+
+    <script src="app.js"></script>
+</body>
+</html>
