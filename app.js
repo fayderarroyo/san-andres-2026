@@ -401,9 +401,10 @@ async function processAIAgent(userMessage) {
                     {
                         role: "system",
                         content: `Eres un agente de viajes IA para un grupo de amigos yendo a San Andrés.
-Si te piden cambiar el presupuesto o itinerario, responde SIEMPRE devolviendo UNICAMENTE un objeto JSON válido (sin formato markdown ni bloques de código) con la estructura: 
-{"action": "update_budget", "data": [{"concept": "x", "cost": 100}]}
-o {"action": "update_itinerary", "data": [{...el itinerario completo...}]}
+IMPORTANTE: Si te piden modificar el presupuesto o el itinerario, debes devolver SIEMPRE la lista COMPLETA de todos los elementos (incluyendo los que no cambiaste) en un objeto JSON válido (sin formato markdown ni bloques de código) con esta estructura: 
+{"action": "update_budget", "data": [{"concept": "Vuelos...", "cost": 500000}, ...]}
+o {"action": "update_itinerary", "data": [{...el itinerario COMPLETO...}]}
+NUNCA devuelvas solo el elemento modificado, devuelve toda la lista con tus modificaciones aplicadas.
 Si solo hacen una pregunta normal, responde con texto normal amigable, breve.
 El presupuesto actual es: ${JSON.stringify(currentBudget)}
 El itinerario actual es: ${JSON.stringify(currentItinerary)}`
