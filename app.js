@@ -393,20 +393,20 @@ async function processAIAgent(userMessage) {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": \`Bearer \${DEEPSEEK_API_KEY}\`
+                "Authorization": `Bearer ${DEEPSEEK_API_KEY}`
             },
             body: JSON.stringify({
                 model: "deepseek-chat",
                 messages: [
                     {
                         role: "system",
-                        content: \`Eres un agente de viajes IA para un grupo de amigos yendo a San Andrés.
+                        content: `Eres un agente de viajes IA para un grupo de amigos yendo a San Andrés.
 Si te piden cambiar el presupuesto o itinerario, responde SIEMPRE devolviendo UNICAMENTE un objeto JSON válido (sin formato markdown ni bloques de código) con la estructura: 
 {"action": "update_budget", "data": [{"concept": "x", "cost": 100}]}
 o {"action": "update_itinerary", "data": [{...el itinerario completo...}]}
 Si solo hacen una pregunta normal, responde con texto normal amigable, breve.
-El presupuesto actual es: \${JSON.stringify(currentBudget)}
-El itinerario actual es: \${JSON.stringify(currentItinerary)}\`
+El presupuesto actual es: ${JSON.stringify(currentBudget)}
+El itinerario actual es: ${JSON.stringify(currentItinerary)}`
                     },
                     { role: "user", content: userMessage }
                 ],
