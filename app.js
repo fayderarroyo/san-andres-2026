@@ -287,12 +287,25 @@ function loadChatMessages() {
     const container = document.getElementById('chat-messages');
     container.innerHTML = `<div id="empty-chat-msg" class="text-center text-xs text-slate-400/60 my-4 italic">Conectando al chat en vivo...</div>`;
 
+    // Guardar el momento en que se carga la página para no notificar mensajes viejos
+    const appLoadTime = Date.now();
+
     if (isFirebaseActive) {
         // Escuchar mensajes de Firebase
         const db = firebase.database();
         db.ref('chat').on('child_added', (snapshot) => {
             const msg = snapshot.val();
             renderSingleMessage(msg);
+
+            // Disparar notificación si es un mensaje nuevo, de otra persona, y tenemos permiso
+            if (msg.timestamp && msg.timestamp > appLoadTime && msg.user !== currentUser) {
+                if (Notification.permission === "granted" && document.hidden) {
+                    new Notification(`Nuevo mensaje de ${msg.user}`, {
+                        body: msg.text,
+                        icon: "img/corals.png"
+                    });
+                }
+            }
         });
     } else {
         // Fallback a LocalStorage si no hay Firebase configurado
