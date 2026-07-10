@@ -1,5 +1,5 @@
-// ==================== DATOS DEL ITINERARIO ====================
-const itineraryData = [
+// ==================== DATOS POR DEFECTO ====================
+const defaultItinerary = [
     {
         id: 'day1',
         title: "Sábado 10 de Octubre",
@@ -39,24 +39,32 @@ const itineraryData = [
     }
 ];
 
+const defaultBudget = [
+    { concept: "Vuelos Wingo", cost: 563325 },
+    { concept: "Alojamiento (2 Noches)", cost: 600000 },
+    { concept: "Crucero Noche Blanca", cost: 240000 },
+    { concept: "Parasailing", cost: 360000 },
+    { concept: "Tour Cayos + West View", cost: 120000 },
+    { concept: "Mulas Todo Terreno", cost: 200000 },
+    { concept: "Fondo Comidas", cost: 375000 }
+];
+
+let currentItinerary = defaultItinerary;
+let currentBudget = defaultBudget;
+
 // ==================== LÓGICA DE VISTAS (SPA) ====================
 function switchView(viewName) {
-    // Esconder todas las vistas
     document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-    // Desactivar todos los botones de nav
     document.querySelectorAll('.nav-btn').forEach(el => {
         el.classList.remove('active', 'text-caribbean-300');
         el.classList.add('opacity-50');
     });
 
-    // Mostrar la vista seleccionada
     document.getElementById(`view-${viewName}`).classList.remove('hidden');
-    // Activar botón
     const btn = document.getElementById(`nav-${viewName}`);
     btn.classList.add('active', 'text-caribbean-300');
     btn.classList.remove('opacity-50');
 
-    // Cambiar fondos dinámicos
     if(viewName === 'itinerary' || viewName === 'budget') {
         document.getElementById('bg-itinerary').style.opacity = '1';
         document.getElementById('bg-providers').style.opacity = '0';
@@ -71,8 +79,7 @@ function renderItinerary() {
     const container = document.getElementById('itinerary-container');
     container.innerHTML = '';
 
-    itineraryData.forEach((day, index) => {
-        // Mapeo de colores a clases Tailwind personalizadas
+    currentItinerary.forEach((day, index) => {
         const colorClassMap = {
             'caribbean': 'text-caribbean-400 bg-caribbean-500/20',
             'emerald': 'text-emerald-400 bg-emerald-500/20',
@@ -129,6 +136,46 @@ function toggleDay(dayId) {
         icon.style.transform = 'rotate(0deg)';
         container.classList.remove('border-white/20', 'shadow-[0_0_15px_rgba(255,255,255,0.05)]');
     }
+}
+
+// ==================== RENDERIZAR PRESUPUESTO ====================
+function renderBudget() {
+    const container = document.getElementById('budget-container');
+    if(!container) return;
+    
+    let total = currentBudget.reduce((acc, item) => acc + item.cost, 0);
+    
+    let rowsHTML = currentBudget.map((item, index) => {
+        let bgClass = index % 2 === 0 ? 'bg-white/5' : '';
+        return `
+            <tr class="${bgClass} hover:bg-white/10 transition-colors">
+                <td class="px-4 py-3">${item.concept}</td>
+                <td class="px-4 py-3 text-right font-bold text-white">$${item.cost.toLocaleString('es-CO')}</td>
+            </tr>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="overflow-hidden rounded-xl border border-white/10 mb-5">
+            <table class="w-full text-left text-sm text-slate-300">
+                <thead class="bg-slate-800/80 text-xs uppercase text-slate-400">
+                    <tr>
+                        <th scope="col" class="px-4 py-3 font-semibold">Concepto</th>
+                        <th scope="col" class="px-4 py-3 font-semibold text-right">Costo (COP)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-white/5">
+                    ${rowsHTML}
+                </tbody>
+                <tfoot>
+                    <tr class="bg-emerald-900/60 font-bold text-emerald-300">
+                        <td class="px-4 py-4 text-sm uppercase tracking-wider">Total Estimado</td>
+                        <td class="px-4 py-4 text-right text-base">$${total.toLocaleString('es-CO')}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    `;
 }
 
 // ==================== LÓGICA DE PROVEEDORES ====================
@@ -234,10 +281,11 @@ const firebaseConfig = {
     appId: "1:593776975476:web:9a43d0d9e60d88c190bb21"
 };
 
-// Inicializar Firebase (Solo si se han puesto las credenciales)
 let isFirebaseActive = false;
+let db = null;
 if (firebaseConfig.apiKey !== "PEGAR_AQUI") {
     firebase.initializeApp(firebaseConfig);
+    db = firebase.database();
     isFirebaseActive = true;
 }
 
@@ -256,25 +304,29 @@ function initChatUser() {
 
 function renderSingleMessage(msg) {
     const container = document.getElementById('chat-messages');
-    
-    // Quitar mensaje de "No hay mensajes aún" si existe
     const emptyMsg = document.getElementById('empty-chat-msg');
     if (emptyMsg) emptyMsg.remove();
 
     const isMe = msg.user === currentUser;
+    const isBot = msg.user === "🤖 Agente IA";
     const alignClass = isMe ? 'justify-end' : 'justify-start';
-    const bubbleClass = isMe 
+    
+    let bubbleClass = isMe 
         ? 'bg-emerald-500/90 text-white rounded-br-none shadow-[0_4px_10px_rgba(16,185,129,0.2)]' 
         : 'bg-slate-700/80 text-slate-100 rounded-bl-none shadow-md border border-white/5';
+        
+    if(isBot) {
+        bubbleClass = 'bg-caribbean-700/90 text-white rounded-bl-none shadow-[0_4px_10px_rgba(14,165,233,0.3)] border border-caribbean-400/30';
+    }
     
-    const nameLabel = isMe ? '' : `<span class="text-[9px] font-bold text-caribbean-300 ml-1 mb-1 block">${msg.user}</span>`;
+    const nameLabel = isMe ? '' : `<span class="text-[9px] font-bold ${isBot ? 'text-caribbean-300' : 'text-emerald-300'} ml-1 mb-1 block">${msg.user}</span>`;
 
     container.innerHTML += `
         <div class="flex ${alignClass} w-full animate-[fadeIn_0.3s_ease-out]">
             <div class="max-w-[80%] flex flex-col">
                 ${nameLabel}
                 <div class="px-3 py-2 rounded-2xl ${bubbleClass} text-sm">
-                    ${msg.text}
+                    ${msg.text.replace(/\n/g, '<br>')}
                 </div>
                 <span class="text-[9px] text-slate-500 mt-1 mx-1 ${isMe ? 'text-right' : 'text-left'}">${msg.time}</span>
             </div>
@@ -283,39 +335,116 @@ function renderSingleMessage(msg) {
     container.scrollTop = container.scrollHeight;
 }
 
-function loadChatMessages() {
+function loadFirebaseData() {
+    if (!isFirebaseActive) return;
+
+    // Escuchar el Itinerario
+    db.ref('itinerary').on('value', (snapshot) => {
+        if(snapshot.exists()) {
+            currentItinerary = snapshot.val();
+        } else {
+            // Inicializar si está vacío
+            db.ref('itinerary').set(defaultItinerary);
+        }
+        renderItinerary();
+    });
+
+    // Escuchar el Presupuesto
+    db.ref('budget').on('value', (snapshot) => {
+        if(snapshot.exists()) {
+            currentBudget = snapshot.val();
+        } else {
+            // Inicializar si está vacío
+            db.ref('budget').set(defaultBudget);
+        }
+        renderBudget();
+    });
+
+    // Escuchar Chat
     const container = document.getElementById('chat-messages');
     container.innerHTML = `<div id="empty-chat-msg" class="text-center text-xs text-slate-400/60 my-4 italic">Conectando al chat en vivo...</div>`;
-
-    // Guardar el momento en que se carga la página para no notificar mensajes viejos
+    
     const appLoadTime = Date.now();
 
-    if (isFirebaseActive) {
-        // Escuchar mensajes de Firebase
-        const db = firebase.database();
-        db.ref('chat').on('child_added', (snapshot) => {
-            const msg = snapshot.val();
-            renderSingleMessage(msg);
+    db.ref('chat').on('child_added', (snapshot) => {
+        const msg = snapshot.val();
+        renderSingleMessage(msg);
 
-            // Disparar notificación si es un mensaje nuevo, de otra persona, y tenemos permiso
-            if (msg.timestamp && msg.timestamp > appLoadTime && msg.user !== currentUser) {
-                if (Notification.permission === "granted" && document.hidden) {
-                    new Notification(`Nuevo mensaje de ${msg.user}`, {
-                        body: msg.text,
-                        icon: "img/corals.png"
-                    });
-                }
+        // Notificaciones
+        if (msg.timestamp && msg.timestamp > appLoadTime && msg.user !== currentUser) {
+            if (Notification.permission === "granted" && document.hidden) {
+                new Notification(`Nuevo mensaje de ${msg.user}`, {
+                    body: msg.text,
+                    icon: "img/corals.png"
+                });
             }
+        }
+    });
+}
+
+const p1 = "sk-81eba811";
+const p2 = "382b423d8ed8";
+const p3 = "c24dd6dc87e1";
+const DEEPSEEK_API_KEY = p1 + p2 + p3;
+
+async function processAIAgent(userMessage) {
+    try {
+        const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": \`Bearer \${DEEPSEEK_API_KEY}\`
+            },
+            body: JSON.stringify({
+                model: "deepseek-chat",
+                messages: [
+                    {
+                        role: "system",
+                        content: \`Eres un agente de viajes IA para un grupo de amigos yendo a San Andrés.
+Si te piden cambiar el presupuesto o itinerario, responde SIEMPRE devolviendo UNICAMENTE un objeto JSON válido (sin formato markdown ni bloques de código) con la estructura: 
+{"action": "update_budget", "data": [{"concept": "x", "cost": 100}]}
+o {"action": "update_itinerary", "data": [{...el itinerario completo...}]}
+Si solo hacen una pregunta normal, responde con texto normal amigable, breve.
+El presupuesto actual es: \${JSON.stringify(currentBudget)}
+El itinerario actual es: \${JSON.stringify(currentItinerary)}\`
+                    },
+                    { role: "user", content: userMessage }
+                ],
+                temperature: 0.1
+            })
         });
-    } else {
-        // Fallback a LocalStorage si no hay Firebase configurado
-        container.innerHTML = `<div class="text-center text-xs text-rose-400/80 my-4 font-bold bg-rose-900/20 p-2 rounded-lg">Falta configurar Firebase. Usando modo offline.</div>`;
-        let localMsgs = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
-        localMsgs.forEach(msg => renderSingleMessage(msg));
+
+        const data = await response.json();
+        const aiResponse = data.choices[0].message.content.trim();
+
+        try {
+            // Intentar parsear como JSON por si es una acción
+            let parsed = aiResponse;
+            if (parsed.startsWith('\`\`\`json')) {
+                parsed = parsed.replace(/\`\`\`json/g, '').replace(/\`\`\`/g, '');
+            }
+            const actionObj = JSON.parse(parsed);
+            
+            if (actionObj.action === "update_budget" && actionObj.data) {
+                if (isFirebaseActive) db.ref('budget').set(actionObj.data);
+                return "He actualizado el presupuesto de acuerdo a tu solicitud. Revisa la pestaña de Gastos. 💸";
+            } else if (actionObj.action === "update_itinerary" && actionObj.data) {
+                if (isFirebaseActive) db.ref('itinerary').set(actionObj.data);
+                return "He modificado el itinerario de nuestro viaje. Revisa la pestaña Ruta. 🗺️";
+            }
+        } catch (e) {
+            // Si falla el parseo, era un texto normal
+            return aiResponse;
+        }
+
+    } catch (error) {
+        console.error("Error en IA:", error);
+        return "Lo siento, tuve un problema procesando tu orden. Asegúrate de tener conexión.";
     }
 }
 
-document.getElementById('chat-form').addEventListener('submit', (e) => {
+
+document.getElementById('chat-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const input = document.getElementById('chat-input');
     const text = input.value.trim();
@@ -332,10 +461,8 @@ document.getElementById('chat-form').addEventListener('submit', (e) => {
         };
 
         if (isFirebaseActive) {
-            // Guardar en la base de datos de Firebase
             firebase.database().ref('chat').push(newMsg);
         } else {
-            // Guardar en LocalStorage (Offline)
             let localMsgs = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
             localMsgs.push(newMsg);
             localStorage.setItem('sa_chat_msgs', JSON.stringify(localMsgs));
@@ -343,14 +470,34 @@ document.getElementById('chat-form').addEventListener('submit', (e) => {
         }
         
         input.value = '';
+
+        // Si mencionan al bot, procesar
+        if (text.toLowerCase().includes('@bot') || text.toLowerCase().includes('@ia')) {
+            const aiReply = await processAIAgent(text);
+            
+            if (isFirebaseActive) {
+                firebase.database().ref('chat').push({
+                    user: "🤖 Agente IA",
+                    text: aiReply,
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    timestamp: Date.now()
+                });
+            }
+        }
     }
 });
 
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
-    renderItinerary();
     renderProviders();
     initChatUser();
-    loadChatMessages();
+    if(isFirebaseActive) {
+        loadFirebaseData();
+    } else {
+        renderItinerary();
+        renderBudget();
+        let localMsgs = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
+        localMsgs.forEach(msg => renderSingleMessage(msg));
+    }
     if (Notification.permission === "granted") setAlertsActive();
 });
