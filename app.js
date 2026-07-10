@@ -57,7 +57,7 @@ function switchView(viewName) {
     btn.classList.remove('opacity-50');
 
     // Cambiar fondos dinámicos
-    if(viewName === 'itinerary') {
+    if(viewName === 'itinerary' || viewName === 'budget') {
         document.getElementById('bg-itinerary').style.opacity = '1';
         document.getElementById('bg-providers').style.opacity = '0';
     } else {
@@ -220,9 +220,84 @@ function setAlertsActive() {
     btn.classList.remove('bg-caribbean-500/80', 'border-caribbean-400/50');
 }
 
+// ==================== LÓGICA DE CHAT GRUPAL ====================
+let currentUser = localStorage.getItem('sa_chat_user');
+let chatMessages = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
+
+function initChatUser() {
+    if (!currentUser) {
+        let name = prompt("¡Bienvenido al chat del viaje! ¿Cuál es tu nombre?");
+        if (name && name.trim() !== "") {
+            currentUser = name.trim();
+            localStorage.setItem('sa_chat_user', currentUser);
+        } else {
+            currentUser = "Viajero Anónimo";
+        }
+    }
+    document.getElementById('chat-user-indicator').innerText = currentUser;
+}
+
+function renderChat() {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = '';
+
+    if (chatMessages.length === 0) {
+        container.innerHTML = `<div class="text-center text-xs text-slate-400/60 my-4 italic">No hay mensajes aún. ¡Escribe el primero!</div>`;
+        return;
+    }
+
+    chatMessages.forEach(msg => {
+        const isMe = msg.user === currentUser;
+        const alignClass = isMe ? 'justify-end' : 'justify-start';
+        const bubbleClass = isMe 
+            ? 'bg-emerald-500/90 text-white rounded-br-none shadow-[0_4px_10px_rgba(16,185,129,0.2)]' 
+            : 'bg-slate-700/80 text-slate-100 rounded-bl-none shadow-md border border-white/5';
+        
+        const nameLabel = isMe ? '' : `<span class="text-[9px] font-bold text-caribbean-300 ml-1 mb-1 block">${msg.user}</span>`;
+
+        container.innerHTML += `
+            <div class="flex ${alignClass} w-full animate-[fadeIn_0.3s_ease-out]">
+                <div class="max-w-[80%] flex flex-col">
+                    ${nameLabel}
+                    <div class="px-3 py-2 rounded-2xl ${bubbleClass} text-sm">
+                        ${msg.text}
+                    </div>
+                    <span class="text-[9px] text-slate-500 mt-1 mx-1 ${isMe ? 'text-right' : 'text-left'}">${msg.time}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    // Auto-scroll al final
+    container.scrollTop = container.scrollHeight;
+}
+
+document.getElementById('chat-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const input = document.getElementById('chat-input');
+    const text = input.value.trim();
+    
+    if (text !== '') {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        chatMessages.push({
+            user: currentUser,
+            text: text,
+            time: timeString
+        });
+        
+        localStorage.setItem('sa_chat_msgs', JSON.stringify(chatMessages));
+        input.value = '';
+        renderChat();
+    }
+});
+
 // ==================== INICIALIZACIÓN ====================
 document.addEventListener('DOMContentLoaded', () => {
     renderItinerary();
     renderProviders();
+    initChatUser();
+    renderChat();
     if (Notification.permission === "granted") setAlertsActive();
 });
