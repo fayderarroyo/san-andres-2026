@@ -225,13 +225,13 @@ let currentUser = localStorage.getItem('sa_chat_user');
 
 // ⚠️ INSTRUCCIÓN: Pega aquí la configuración de tu proyecto Firebase
 const firebaseConfig = {
-    apiKey: "PEGAR_AQUI",
-    authDomain: "PEGAR_AQUI",
-    databaseURL: "PEGAR_AQUI",
-    projectId: "PEGAR_AQUI",
-    storageBucket: "PEGAR_AQUI",
-    messagingSenderId: "PEGAR_AQUI",
-    appId: "PEGAR_AQUI"
+    apiKey: "AIzaSyATfIsnV6JtnGo_bgXg1ZpTd6QTKwF5ReU",
+    authDomain: "san-andres-2026.firebaseapp.com",
+    databaseURL: "https://san-andres-2026-default-rtdb.firebaseio.com",
+    projectId: "san-andres-2026",
+    storageBucket: "san-andres-2026.firebasestorage.app",
+    messagingSenderId: "593776975476",
+    appId: "1:593776975476:web:9a43d0d9e60d88c190bb21"
 };
 
 // Inicializar Firebase (Solo si se han puesto las credenciales)
