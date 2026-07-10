@@ -220,9 +220,26 @@ function setAlertsActive() {
     btn.classList.remove('bg-caribbean-500/80', 'border-caribbean-400/50');
 }
 
-// ==================== LÓGICA DE CHAT GRUPAL ====================
+// ==================== LÓGICA DE CHAT GRUPAL (FIREBASE) ====================
 let currentUser = localStorage.getItem('sa_chat_user');
-let chatMessages = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
+
+// ⚠️ INSTRUCCIÓN: Pega aquí la configuración de tu proyecto Firebase
+const firebaseConfig = {
+    apiKey: "PEGAR_AQUI",
+    authDomain: "PEGAR_AQUI",
+    databaseURL: "PEGAR_AQUI",
+    projectId: "PEGAR_AQUI",
+    storageBucket: "PEGAR_AQUI",
+    messagingSenderId: "PEGAR_AQUI",
+    appId: "PEGAR_AQUI"
+};
+
+// Inicializar Firebase (Solo si se han puesto las credenciales)
+let isFirebaseActive = false;
+if (firebaseConfig.apiKey !== "PEGAR_AQUI") {
+    firebase.initializeApp(firebaseConfig);
+    isFirebaseActive = true;
+}
 
 function initChatUser() {
     if (!currentUser) {
@@ -237,39 +254,52 @@ function initChatUser() {
     document.getElementById('chat-user-indicator').innerText = currentUser;
 }
 
-function renderChat() {
+function renderSingleMessage(msg) {
     const container = document.getElementById('chat-messages');
-    container.innerHTML = '';
+    
+    // Quitar mensaje de "No hay mensajes aún" si existe
+    const emptyMsg = document.getElementById('empty-chat-msg');
+    if (emptyMsg) emptyMsg.remove();
 
-    if (chatMessages.length === 0) {
-        container.innerHTML = `<div class="text-center text-xs text-slate-400/60 my-4 italic">No hay mensajes aún. ¡Escribe el primero!</div>`;
-        return;
-    }
+    const isMe = msg.user === currentUser;
+    const alignClass = isMe ? 'justify-end' : 'justify-start';
+    const bubbleClass = isMe 
+        ? 'bg-emerald-500/90 text-white rounded-br-none shadow-[0_4px_10px_rgba(16,185,129,0.2)]' 
+        : 'bg-slate-700/80 text-slate-100 rounded-bl-none shadow-md border border-white/5';
+    
+    const nameLabel = isMe ? '' : `<span class="text-[9px] font-bold text-caribbean-300 ml-1 mb-1 block">${msg.user}</span>`;
 
-    chatMessages.forEach(msg => {
-        const isMe = msg.user === currentUser;
-        const alignClass = isMe ? 'justify-end' : 'justify-start';
-        const bubbleClass = isMe 
-            ? 'bg-emerald-500/90 text-white rounded-br-none shadow-[0_4px_10px_rgba(16,185,129,0.2)]' 
-            : 'bg-slate-700/80 text-slate-100 rounded-bl-none shadow-md border border-white/5';
-        
-        const nameLabel = isMe ? '' : `<span class="text-[9px] font-bold text-caribbean-300 ml-1 mb-1 block">${msg.user}</span>`;
-
-        container.innerHTML += `
-            <div class="flex ${alignClass} w-full animate-[fadeIn_0.3s_ease-out]">
-                <div class="max-w-[80%] flex flex-col">
-                    ${nameLabel}
-                    <div class="px-3 py-2 rounded-2xl ${bubbleClass} text-sm">
-                        ${msg.text}
-                    </div>
-                    <span class="text-[9px] text-slate-500 mt-1 mx-1 ${isMe ? 'text-right' : 'text-left'}">${msg.time}</span>
+    container.innerHTML += `
+        <div class="flex ${alignClass} w-full animate-[fadeIn_0.3s_ease-out]">
+            <div class="max-w-[80%] flex flex-col">
+                ${nameLabel}
+                <div class="px-3 py-2 rounded-2xl ${bubbleClass} text-sm">
+                    ${msg.text}
                 </div>
+                <span class="text-[9px] text-slate-500 mt-1 mx-1 ${isMe ? 'text-right' : 'text-left'}">${msg.time}</span>
             </div>
-        `;
-    });
-
-    // Auto-scroll al final
+        </div>
+    `;
     container.scrollTop = container.scrollHeight;
+}
+
+function loadChatMessages() {
+    const container = document.getElementById('chat-messages');
+    container.innerHTML = `<div id="empty-chat-msg" class="text-center text-xs text-slate-400/60 my-4 italic">Conectando al chat en vivo...</div>`;
+
+    if (isFirebaseActive) {
+        // Escuchar mensajes de Firebase
+        const db = firebase.database();
+        db.ref('chat').on('child_added', (snapshot) => {
+            const msg = snapshot.val();
+            renderSingleMessage(msg);
+        });
+    } else {
+        // Fallback a LocalStorage si no hay Firebase configurado
+        container.innerHTML = `<div class="text-center text-xs text-rose-400/80 my-4 font-bold bg-rose-900/20 p-2 rounded-lg">Falta configurar Firebase. Usando modo offline.</div>`;
+        let localMsgs = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
+        localMsgs.forEach(msg => renderSingleMessage(msg));
+    }
 }
 
 document.getElementById('chat-form').addEventListener('submit', (e) => {
@@ -281,15 +311,25 @@ document.getElementById('chat-form').addEventListener('submit', (e) => {
         const now = new Date();
         const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
-        chatMessages.push({
+        const newMsg = {
             user: currentUser,
             text: text,
-            time: timeString
-        });
+            time: timeString,
+            timestamp: Date.now()
+        };
+
+        if (isFirebaseActive) {
+            // Guardar en la base de datos de Firebase
+            firebase.database().ref('chat').push(newMsg);
+        } else {
+            // Guardar en LocalStorage (Offline)
+            let localMsgs = JSON.parse(localStorage.getItem('sa_chat_msgs')) || [];
+            localMsgs.push(newMsg);
+            localStorage.setItem('sa_chat_msgs', JSON.stringify(localMsgs));
+            renderSingleMessage(newMsg);
+        }
         
-        localStorage.setItem('sa_chat_msgs', JSON.stringify(chatMessages));
         input.value = '';
-        renderChat();
     }
 });
 
@@ -298,6 +338,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderItinerary();
     renderProviders();
     initChatUser();
-    renderChat();
+    loadChatMessages();
     if (Notification.permission === "granted") setAlertsActive();
 });
